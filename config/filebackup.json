@@ -1,0 +1,107 @@
+{
+  "options": {
+	"name": "Retropi-Backup",
+    "host": "192.168.178.53",
+    "user": "pi",
+    "password": "raspberry",
+    "targetdir": "/home/buccaneersdan/Schreibtisch/pibackup",
+	"copystats": true,
+	"processonly_types": "all",
+	"loggers": [
+	  { "type": "file", "folder": "./logs", "level": "all" },
+	  { "type": "console", "level": "errors" }
+	]
+  },
+  "pathes": [
+
+	{
+	  	"name": "Bootup configuration",
+		"type": "file",
+	  	"path": "/boot/config.txt",
+	  	"options": {
+		  "overwrite_newer": true,
+		  "skip": false
+		}
+	},
+
+	{
+	  "name": "Configs",
+      "type": "dir",
+      "path": "/opt/retropie/configs/all",
+      "options": {
+		"recurse": true,
+		"overwrite_newer": true,
+		"skip": false
+	  }
+    },
+
+	{
+	  "name": "Supplementary",
+	  "type": "dir",
+	  "path": "/opt/retropie/supplementary",
+	  "options": {
+		"exclude_folders": [
+		  "golang",
+		  "xpad/.git"
+		],
+		"exclude_files": [
+		  "emulationstation/emulationstation"
+		],
+		"recurse": true,
+		"overwrite_newer": true,
+		"skip": false
+	  }
+	},
+
+	{
+	  "name": "emulationstation config in etc",
+	  "type": "dir",
+	  "path": "/etc/emulationstation",
+	  "options": {
+		"overwrite_newer": true,
+		"skip": false
+	  }
+	},
+
+	{
+	  "name": "N64 Saves",
+      "type": "dir",
+      "path": "/home/pi/.local/share/mupen64plus/save",
+	  "options": {
+		"overwrite_newer": true,
+		"skip": false
+	  }
+    },
+
+	{
+	  "name": "Home - BIOS",
+      "type": "dir",
+      "path": "/home/pi/RetroPie/BIOS",
+	  "options": {
+		"overwrite_newer": true,
+		"skip": false
+	  }
+    },
+
+	{
+	  "name": "Home - retropiemenu",
+      "type": "dir",
+      "path": "/home/pi/RetroPie/retropiemenu",
+	  "options": {
+		"overwrite_newer": true,
+		"skip": false
+	  }
+    },
+
+	{
+	  "name": "Home - retropiemenu",
+      "type": "dir",
+      "path": "/home/pi/RetroPie/savegames",
+	  "options": {
+		"recurse": true,
+		"overwrite": "newer",
+		"skip": false
+	  }
+    }
+  ]
+}
