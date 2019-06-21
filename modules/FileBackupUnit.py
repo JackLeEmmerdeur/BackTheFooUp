@@ -1,25 +1,21 @@
-from lib.helpers import assert_obj_has_keys, is_sequence_with_any_elements, repeat, string_is_empty, is_empty_dict, is_string
-from lib.filesize_helpers import get_filesize_progress_divider, bytes_to_unit
+from fileutilslib.misclib.helpertools import assert_obj_has_keys, is_sequence_with_any_elements, repeat, string_is_empty, is_empty_dict
+from fileutilslib.disklib.filetools import get_filesize_progress_divider, bytes_to_unit
 from os import makedirs, utime
 import paramiko
-from json import load
 from pathlib import Path
 from classes.BackupEntry import BackupEntryType, BackupEntry
 from classes.JobException import JobException
-from classes.ConsoleColors import ConsoleColors
 from os import lstat
 from datetime import datetime
 import stat
 from fnmatch import fnmatch
-from classes.LoggerFactory import LoggerHandlerType, LoggerFactory, LoggerFormatterType, LoggerHandlerConfig
-from logging import DEBUG, INFO, WARNING, ERROR
+from classes.LoggerFactory import LoggerFactory
+from modules.Unit import Unit
+from typing import Dict
 
 
-class FileBackup:
+class FileBackup(Unit):
 	_entries = None
-
-	_jsondata = None
-	""":type: Dict"""
 
 	_host = None
 	""":type: str"""
@@ -32,9 +28,6 @@ class FileBackup:
 
 	_targetdir = None
 	""":type: str"""
-
-	_config_loaded = True
-	""":type: bool"""
 
 	_last_dl_bytes = 0
 	""":type: long"""
@@ -54,111 +47,54 @@ class FileBackup:
 	_processonly_types = None
 	""":type: str[]"""
 
-	_div = "==============="
-
-	_logger = None
-	""":type: logging.Logger"""
-
 	def __init__(
 		self,
 		configfile,
 		show_copystats=False,
 		logfactory: LoggerFactory=None
 	):
+		super().__init__(
+			"FileBackup",
+			configfile,
+			["name", "host", "user", "password", "targetdir"],
+			self.on_config_loaded,
+			logfactory
+		)
+
 		self._entries = []
-		self._config_loaded = False
 		self._show_copystats = show_copystats
-		self.reload_jsonconfig(configfile, logfactory)
-		self.info(str(self))
 
 	def __del__(self):
 		if self._transport is not None:
 			self._transport.close()
 
 	def __str__(self):
-		dbg = "{}\nFileBackupUnit\n{}\n{} Jobs defined\n".format(
-			self._div, self._div,
-			len(self._jsondata["pathes"])
-		)
-		if self._config_loaded:
-			for k, v in self._jsondata["options"].items():
-				dbg += "{}: {}\n".format(k, str(v))
+		dbg = super().__str__()
+		if "paths" in self._jsondata:
+			jobs = "{}\n{}\n{}\n{} Jobs defined\n".format(
+				self._div, self._unit_name, self._div,
+				len(self._jsondata["pathes"])
+			)
+
+			dbg = jobs + dbg
 		return dbg
 
-	def info(self, msg):
-		if self._logger is not None:
-			self._logger.info(msg)
+	def on_config_loaded(self, jsondata: Dict):
+		if is_empty_dict(jsondata):
+			raise Exception("no config json-data found")
 
-	def error(self, e):
-		if self._logger is not None:
-			self._logger.error(str(e))
-
-	def reload_jsonconfig(self, configfile, logfactory: LoggerFactory):
-		if is_sequence_with_any_elements(self._jsondata):
-			self._jsondata.clear()
-
-		self._jsondata = load(configfile)
+		self._jsondata = jsondata
 
 		self._host = None
 		self._user = None
 		self._password = None
 
-		assert_obj_has_keys(self._jsondata, "json", ["options"])
 		options = self._jsondata["options"]
-		assert_obj_has_keys(options, "options", ["name", "host", "user", "password", "targetdir"])
 
 		self._host = options["host"]
 		self._user = options["user"]
 		self._password = options["password"]
 		self._targetdir = options["targetdir"]
-
-		if "loggers" in options:
-			loggers = options["loggers"]
-			if is_sequence_with_any_elements(loggers):
-				lt = LoggerHandlerType.Nope
-
-				handlerconfigs = []
-
-				for logger in loggers:
-					if "type" not in logger:
-						raise Exception("logger in json has to contain a type")
-
-					if "level" not in logger or (
-						logger["level"] != "all" and
-						logger["level"] != "errors"
-					):
-						raise Exception("logger level is not cool (use 'all' or 'errors')")
-
-					if logger["type"] == "file":
-						lt = LoggerHandlerType.FileHandler
-					elif logger["type"] == "console":
-						lt = LoggerHandlerType.ConsoleHandler
-					else:
-						raise Exception("logger-type {} in json is not recognized".format(logger["type"]))
-
-					if lt == LoggerHandlerType.FileHandler and ("folder" not in logger or string_is_empty(logger["folder"])):
-						raise Exception("logger with type file has to contain a folder-option")
-
-					handlerconfig = None
-					""":type:LoggerHandlerConfig"""
-
-					if lt == LoggerHandlerType.FileHandler:
-						handlerconfig = LoggerHandlerConfig.create_file_config(
-							ERROR if logger["level"] == "errors" else INFO,
-							logger["folder"]
-						)
-					else:
-						if logger["level"] == "errors":
-							handlerconfig = LoggerHandlerConfig.create_console_err_config(ERROR)
-						else:
-							handlerconfig = LoggerHandlerConfig.create_console_err_config(INFO)
-
-					handlerconfigs.append(handlerconfig)
-
-				self._logger = logfactory.addlogger(
-					options["name"],
-					handlerconfigs
-				)
 
 		if "copystats" in options:
 			self._copystats = options["copystats"]
@@ -167,8 +103,6 @@ class FileBackup:
 			self._processonly_types = options["processonly_types"].split(",")
 
 		assert_obj_has_keys(self._jsondata, "json", ["pathes"])
-
-		self._config_loaded = True
 
 	# def progressfiledownload(self, current, total):
 	# 	p = False
@@ -439,36 +373,6 @@ class FileBackup:
 
 		try:
 			self._download_file(1, sftp, remote_root, localfile, remote_filenode, entry)
-			# stat_remote = sftp.lstat(str(remote_filenode))
-			# options = entry.get_options()
-			# do_transfer = True
-			#
-			# self.info("\tProcessing file: '{}'".format(remote_filenode))
-			#
-			# if options is not None:
-			# 	do_transfer = self._check_file_with_options(options, localfile, remote_filenode, stat_remote, "\t\t")
-			#
-			# if do_transfer is False:
-			# 	self.info("\t\tExcluding '{}' due to file-options".format(
-			# 		remote_filenode
-			# 	))
-			# else:
-			# 	self.info("\t\tDownloading file (Total: {})".format(
-			# 		bytes_to_unit(stat_remote.st_size, 1, True, False))
-			# 	)
-			#
-			# 	self._current_progress_divider = get_filesize_progress_divider(stat_remote.st_size)
-			# 	if "simulate" in options and options["simulate"] is True:
-			# 		pass
-			# 	else:
-			# 		sftp.get(
-			# 			str(remote_filenode), str(localfile),
-			# 			self.progressfiledownload
-			# 		)
-			#
-			# 	if self._copystats:
-			# 		self.info("\tCopying file modification dates")
-			# 		utime(str(localfile), (stat_remote.st_atime, stat_remote.st_mtime))
 
 		except Exception as e:
 			self.error("Error:\n{}".format(remote_filenode))

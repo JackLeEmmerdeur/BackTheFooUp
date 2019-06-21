@@ -1,6 +1,6 @@
 from enum import Enum
-from lib.helpers import string_is_empty, is_sequence_with_any_elements
-from logging import Formatter, Logger, getLogger, DEBUG, FileHandler, StreamHandler, basicConfig
+from fileutilslib.misclib.helpertools import string_is_empty, is_sequence_with_any_elements
+from logging import Formatter, Logger, getLogger, DEBUG, FileHandler, StreamHandler
 from sys import stdout, stderr
 from typing import List
 from pathlib import Path

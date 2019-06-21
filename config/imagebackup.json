@@ -1,0 +1,12 @@
+{
+  "options": {
+	"name": "Retropi-SDCard-Image",
+	"local": true,
+    "targetdir": "/home/buccaneersdan/Schreibtisch/pibackup",
+	"ddbatchsize": "30M",
+	"loggers": [
+	  { "type": "file", "folder": "./logs", "level": "all" },
+	  { "type": "console", "level": "errors" }
+	]
+  }
+}
