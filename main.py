@@ -1,9 +1,9 @@
 import click
-from modules.FileBackupUnit import FileBackup
-from modules.ImageBackupUnit import ImageBackup
+from fileutilslib.classes.ConsoleColors import ConsoleColors, ConsoleColor
 from fileutilslib.misclib.helpertools import list_to_str, get_reformatted_exception
 from classes.LoggerFactory import LoggerFactory
-from classes.ConsoleColors import ConsoleColors, ConsoleColor
+from modules.FileBackupUnit import FileBackupUnit
+from modules.ImageBackupUnit import ImageBackupUnit
 
 backuptypes_str = list_to_str(["file", "image"], ", ", True, " or ", "'", "'")
 
@@ -15,9 +15,9 @@ def backup(configfile, backuptype):
 	try:
 		factory = LoggerFactory("backup")
 		if backuptype == "image":
-			b = ImageBackup(configfile, factory)
+			b = ImageBackupUnit(configfile, factory)
 		elif backuptype == "ssh":
-			b = FileBackup(configfile, True, factory)
+			b = FileBackupUnit(configfile, True, factory)
 		else:
 			raise Exception("Backup-Unit-Type invalid")
 		b.run()

@@ -1,10 +1,8 @@
-from classes.LoggerFactory import LoggerHandlerType, LoggerFactory, LoggerHandlerConfig
-from fileutilslib.misclib.helpertools import assert_obj_has_keys, is_sequence_with_any_elements, strip, string_is_empty
 from json import load
-from typing import List, Callable
 from logging import INFO, ERROR
-from classes.ConsoleColors import ConsoleColors, ConsoleColor
-
+from typing import List, Callable
+from classes.LoggerFactory import LoggerHandlerType, LoggerFactory, LoggerHandlerConfig
+from fileutilslib.misclib.helpertools import is_sequence_with_any_elements, assert_obj_has_keys, string_is_empty
 
 class Unit:
 
@@ -58,20 +56,6 @@ class Unit:
 			for k, v in self._jsondata["options"].items():
 				dbg += "{}: {}\n".format(k, str(v))
 		return dbg
-
-	@staticmethod
-	def singlecharinput(msg, color: ConsoleColors):
-		nmsg = None
-
-		if color is not ConsoleColors.NONE:
-			nmsg = ConsoleColor.colorline(
-				msg + " ",
-				color
-			)
-		else:
-			nmsg = msg
-
-		return strip(input(nmsg)).lower()
 
 	def info(self, msg):
 		if self._logger is not None:

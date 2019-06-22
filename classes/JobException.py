@@ -1,5 +1,5 @@
-from click import ClickException
 from typing import Any
+from click import ClickException
 
 
 class JobException(ClickException):

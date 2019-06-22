@@ -1,20 +1,21 @@
-from fileutilslib.misclib.helpertools import assert_obj_has_keys, is_sequence_with_any_elements, repeat, string_is_empty, is_empty_dict
-from fileutilslib.disklib.filetools import get_filesize_progress_divider, bytes_to_unit
+import stat
+from datetime import datetime
+from fnmatch import fnmatch
+from os import lstat
 from os import makedirs, utime
-import paramiko
 from pathlib import Path
+from typing import Dict
+import paramiko
+from fileutilslib.disklib.filetools import get_filesize_progress_divider, bytes_to_unit
+from fileutilslib.misclib.helpertools import assert_obj_has_keys, is_sequence_with_any_elements, repeat, \
+	string_is_empty, is_empty_dict
 from classes.BackupEntry import BackupEntryType, BackupEntry
 from classes.JobException import JobException
-from os import lstat
-from datetime import datetime
-import stat
-from fnmatch import fnmatch
 from classes.LoggerFactory import LoggerFactory
 from modules.Unit import Unit
-from typing import Dict
 
 
-class FileBackup(Unit):
+class FileBackupUnit(Unit):
 	_entries = None
 
 	_host = None

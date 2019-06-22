@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Dict
 from pathlib import Path
+from typing import Dict
 from fileutilslib.misclib.helpertools import is_empty_dict
 
 
