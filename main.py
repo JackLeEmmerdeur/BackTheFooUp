@@ -34,6 +34,3 @@ def backup(configfile, backuptype):
 
 if __name__ == "__main__":
 	exit(backup())
-
-
-
