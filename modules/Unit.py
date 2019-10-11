@@ -3,11 +3,19 @@ from logging import INFO, ERROR
 from typing import List, Callable
 from classes.LoggerFactory import LoggerHandlerType, LoggerFactory, LoggerHandlerConfig
 from fileutilslib.misclib.helpertools import is_sequence_with_any_elements, assert_obj_has_keys, string_is_empty
+import click
+
 
 class Unit:
 
 	_unit_name = None
 	""":type: str"""
+
+	_group = None
+	""":type: str"""
+
+	_ignoreoptions = None
+	""":type: List[str]"""
 
 	_options = None
 	""":type: Dict"""
@@ -30,14 +38,18 @@ class Unit:
 	def __init__(
 		self,
 		unit_name: str,
-		configfile: str,
+		configfile: click.File,
 		mandatory_option_keys: List[str],
 		config_loaded_handler: Callable,
-		logfactory: LoggerFactory=None
+		logfactory: LoggerFactory=None,
+		group: str=None,
+		ignoreoptions: List[str]=None
 	):
 		self._unit_name = unit_name
 		self._entries = []
 		self._config_loaded = False
+		self._group = group
+		self._ignoreoptions = ignoreoptions
 
 		if configfile is None:
 			raise Exception("configfile is invalid")
@@ -54,7 +66,8 @@ class Unit:
 		dbg = ""
 		if self._config_loaded:
 			for k, v in self._jsondata["options"].items():
-				dbg += "{}: {}\n".format(k, str(v))
+				if k != "password":
+					dbg += "{}: {}\n".format(k, str(v))
 		return dbg
 
 	def info(self, msg):
@@ -70,7 +83,7 @@ class Unit:
 
 	def reload_jsonconfig(
 		self,
-		configfile: str,
+		configfile: click.File,
 		mandatory_option_keys: List[str],
 		config_loaded_handler: Callable,
 		logfactory: LoggerFactory
@@ -85,9 +98,6 @@ class Unit:
 		assert_obj_has_keys(options, "options", mandatory_option_keys)
 
 		self._options = options
-
-		if config_loaded_handler is not None:
-			config_loaded_handler(self._jsondata)
 
 		if "loggers" in options:
 			loggers = options["loggers"]
@@ -136,5 +146,8 @@ class Unit:
 					options["name"],
 					handlerconfigs
 				)
-
 		self._config_loaded = True
+
+		if config_loaded_handler is not None:
+			config_loaded_handler(self._jsondata)
+
